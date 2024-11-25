@@ -13,6 +13,8 @@ def predict_salary(salary_from, salary_to):
 
 
 def average_amount(amounts: list):
+    if not amounts:
+        return None
     return int(sum(amounts) / len(amounts))
 
 

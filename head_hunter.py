@@ -1,5 +1,3 @@
-from tkinter.font import names
-
 import requests
 from itertools import count
 
@@ -7,25 +5,29 @@ from utils_for_search_vacancies import predict_salary, average_amount, print_vac
 
 
 def predict_rub_salary(vacancy):
-    salary_info = vacancy.get('salary')
+    salary = vacancy.get('salary')
 
-    if not salary_info or salary_info.get('currency') != 'RUR':
+    if not salary or salary.get('currency') != 'RUR':
         return None
-    salary_from = salary_info.get('from')
-    salary_to = salary_info.get('to')
+    salary_from = salary.get('from')
+    salary_to = salary.get('to')
     return predict_salary(salary_from, salary_to)
 
 
-def check_vacancies(language: str):
+def get_all_vacancies_from_hh(language: str):
     vacancies = []
+    moscow_area_id = '1'
+    programmer_role_id = '96'
+    search_period_in_days = '30'
+    vacancies_per_page = '100'
     for page in count(0):
         url = 'https://api.hh.ru/vacancies'
         params = {
-            'professional_role': '96',
-            'area': '1',
-            'period': '30',
+            'professional_role': programmer_role_id,
+            'area': moscow_area_id,
+            'period': search_period_in_days,
             'page': page,
-            'per_page': '100',
+            'per_page': vacancies_per_page,
             'text': f'Программист {language}',
 
         }
@@ -37,8 +39,21 @@ def check_vacancies(language: str):
             break
     return vacancies
 
+def get_count_of_vacancies(language: str):
+    url = 'https://api.hh.ru/vacancies'
+    params = {
+        'professional_role': '96',
+        'area': '1',
+        'period': '30',
+        'text': f'Программист {language}',
 
-def calculating_vacancies_with_amount(vacancies: list):
+    }
+    response = requests.get(url=url, params=params)
+    response.raise_for_status()
+    count_of_vacancies = response.json()['found']
+    return count_of_vacancies
+
+def get_vacancies_with_amount(vacancies: list):
     amounts = []
     for vacancy in vacancies:
         amount = predict_rub_salary(vacancy)
@@ -48,43 +63,21 @@ def calculating_vacancies_with_amount(vacancies: list):
     return amounts
 
 
-Petya_dreams_of_becoming_a_programmer_like_me_hh = {
-    'Python': {
-        "vacancies_found": len(check_vacancies('Python')),
-        "vacancies_processed": len(calculating_vacancies_with_amount(check_vacancies('Python'))),
-        "average_salary": average_amount(calculating_vacancies_with_amount(check_vacancies('Python'))),
-    },
-    'JavaScript': {
-        "vacancies_found": len(check_vacancies('JavaScript')),
-        "vacancies_processed": len(calculating_vacancies_with_amount(check_vacancies('JavaScript'))),
-        "average_salary": average_amount(calculating_vacancies_with_amount(check_vacancies('JavaScript'))),
-    },
-    'Java': {
-        "vacancies_found": len(check_vacancies('Java')),
-        "vacancies_processed": len(calculating_vacancies_with_amount(check_vacancies('Java'))),
-        "average_salary": average_amount(calculating_vacancies_with_amount(check_vacancies('Java'))),
-    },
-    'PHP': {
-        "vacancies_found": len(check_vacancies('PHP')),
-        "vacancies_processed": len(calculating_vacancies_with_amount(check_vacancies('PHP'))),
-        "average_salary": average_amount(calculating_vacancies_with_amount(check_vacancies('PHP'))),
-    },
-    'Ruby': {
-        "vacancies_found": len(check_vacancies('Ruby')),
-        "vacancies_processed": len(calculating_vacancies_with_amount(check_vacancies('Ruby'))),
-        "average_salary": average_amount(calculating_vacancies_with_amount(check_vacancies('Ruby'))),
-    },
-    'C++': {
-        "vacancies_found": len(check_vacancies('C++')),
-        "vacancies_processed": len(calculating_vacancies_with_amount(check_vacancies('C++'))),
-        "average_salary": average_amount(calculating_vacancies_with_amount(check_vacancies('C++'))),
-    },
-    'Go': {
-        "vacancies_found": len(check_vacancies('Go')),
-        "vacancies_processed": len(calculating_vacancies_with_amount(check_vacancies('Go'))),
-        "average_salary": average_amount(calculating_vacancies_with_amount(check_vacancies('Go'))),
-    },
-}
+def main_hh():
+    popular_languages = ['Python', 'JavaScript', 'Java', 'PHP', 'C++', 'Go']
+    comparison_vacancies_hh = {}
+    for language in popular_languages:
+        vacancies = get_all_vacancies_from_hh(language)
+        vacancies_found = get_count_of_vacancies(language)
+        vacancies_with_amount = get_vacancies_with_amount(vacancies)
+
+        comparison_vacancies_hh[language] = {
+            'vacancies_found': vacancies_found,
+            'vacancies_processed': len(vacancies_with_amount),
+            'average_salary': average_amount(vacancies_with_amount)
+        }
+    print_vacancies_table(comparison_vacancies_hh)
+
 
 if __name__ == '__main__':
-    print_vacancies_table(Petya_dreams_of_becoming_a_programmer_like_me_hh)
+    main_hh()
