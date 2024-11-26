@@ -1,10 +1,9 @@
 import requests
 
-from environs import Env
 from utils_for_search_vacancies import predict_salary, average_amount, print_vacancies_table
 
 
-def get_vacancies_data(language: str, secret_key: str):
+def get_all_vacancies_and_count(language: str, secret_key: str):
     url = 'https://api.superjob.ru/2.0/vacancies/'
 
     headers = {
@@ -17,19 +16,9 @@ def get_vacancies_data(language: str, secret_key: str):
 
     response = requests.get(url, headers=headers, params=params)
     response.raise_for_status()
-    data = response.json()
-    return data
-
-
-def get_vacancies_from_superjob(language: str, secret_key: str):
-    data = get_vacancies_data(language, secret_key)
-
-    return data['objects']
-
-
-def get_all_vacancies_count(language: str, secret_key: str):
-    data = get_vacancies_data(language, secret_key)
-    return data['total']
+    vacancies = response.json()['objects']
+    vacancies_count = response.json()['total']
+    return vacancies, vacancies_count
 
 
 def predict_salary_sj(vacancy):
@@ -48,16 +37,12 @@ def get_vacancies_with_amount(vacancies: list):
     return amounts
 
 
-def main_superjob():
-    env = Env()
-    env.read_env()
-    secret_key = env.str('SECRET_SJ_KEY')
-
+def get_vacancies_sj_for_languages_and_print_table(secret_key):
     popular_languages = ['Python', 'JavaScript', 'Java', 'PHP', 'C++', 'Go']
     comparison_vacancies_sj = {}
     for language in popular_languages:
-        vacancies = get_vacancies_from_superjob(language, secret_key)
-        vacancies_found = get_all_vacancies_count(language, secret_key)
+        vacancies, vacancies_found = get_all_vacancies_and_count(language, secret_key)
+        # vacancies_found = get_all_vacancies_count(language, secret_key)
         vacancies_with_amount = get_vacancies_with_amount(vacancies)
 
         comparison_vacancies_sj[language] = {
@@ -66,6 +51,3 @@ def main_superjob():
             'average_salary': average_amount(vacancies_with_amount)
         }
     print_vacancies_table(comparison_vacancies_sj)
-
-
-

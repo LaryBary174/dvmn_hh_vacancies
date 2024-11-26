@@ -35,23 +35,12 @@ def get_all_vacancies_from_hh(language: str):
         page_response.raise_for_status()
         page_payload = page_response.json()
         vacancies.extend(page_payload.get('items'))
+        count_of_vacancies = page_payload['found']
         if page >= page_payload.get('pages') - 1:
             break
-    return vacancies
+    return vacancies, count_of_vacancies
 
-def get_count_of_vacancies(language: str):
-    url = 'https://api.hh.ru/vacancies'
-    params = {
-        'professional_role': '96',
-        'area': '1',
-        'period': '30',
-        'text': f'Программист {language}',
 
-    }
-    response = requests.get(url=url, params=params)
-    response.raise_for_status()
-    count_of_vacancies = response.json()['found']
-    return count_of_vacancies
 
 def get_vacancies_with_amount(vacancies: list):
     amounts = []
@@ -63,12 +52,11 @@ def get_vacancies_with_amount(vacancies: list):
     return amounts
 
 
-def main_hh():
+def get_vacancies_hh_for_languages_and_print_table():
     popular_languages = ['Python', 'JavaScript', 'Java', 'PHP', 'C++', 'Go']
     comparison_vacancies_hh = {}
     for language in popular_languages:
-        vacancies = get_all_vacancies_from_hh(language)
-        vacancies_found = get_count_of_vacancies(language)
+        vacancies, vacancies_found = get_all_vacancies_from_hh(language)
         vacancies_with_amount = get_vacancies_with_amount(vacancies)
 
         comparison_vacancies_hh[language] = {
@@ -78,6 +66,3 @@ def main_hh():
         }
     print_vacancies_table(comparison_vacancies_hh)
 
-
-if __name__ == '__main__':
-    main_hh()
