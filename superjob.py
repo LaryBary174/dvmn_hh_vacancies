@@ -1,23 +1,30 @@
 import requests
-
+from itertools import count
 from utils_for_search_vacancies import predict_salary, average_amount, print_vacancies_table
 
 
 def get_all_vacancies_and_count(language: str, secret_key: str):
-    url = 'https://api.superjob.ru/2.0/vacancies/'
+    vacancies = []
+    for page in count(0):
 
-    headers = {
-        'X-Api-App-Id': secret_key,
-    }
-    params = {
-        'town': 'Москва',
-        'keyword': f'Программист {language}'
-    }
+        url = 'https://api.superjob.ru/2.0/vacancies/'
 
-    response = requests.get(url, headers=headers, params=params)
-    response.raise_for_status()
-    vacancies = response.json()['objects']
-    vacancies_count = response.json()['total']
+        headers = {
+            'X-Api-App-Id': secret_key,
+        }
+        params = {
+            'town': 'Москва',
+            'keyword': f'Программист {language}',
+            'page': page
+        }
+
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        page_payload = response.json()
+        vacancies.extend(page_payload['objects'])
+        vacancies_count = response.json()['total']
+        if not page_payload['more']:
+            break
     return vacancies, vacancies_count
 
 
@@ -42,7 +49,7 @@ def get_vacancies_sj_for_languages_and_print_table(secret_key):
     comparison_vacancies_sj = {}
     for language in popular_languages:
         vacancies, vacancies_found = get_all_vacancies_and_count(language, secret_key)
-        # vacancies_found = get_all_vacancies_count(language, secret_key)
+
         vacancies_with_amount = get_vacancies_with_amount(vacancies)
 
         comparison_vacancies_sj[language] = {
@@ -51,3 +58,5 @@ def get_vacancies_sj_for_languages_and_print_table(secret_key):
             'average_salary': average_amount(vacancies_with_amount)
         }
     print_vacancies_table(comparison_vacancies_sj)
+
+
