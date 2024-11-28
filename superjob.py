@@ -22,7 +22,7 @@ def get_all_vacancies_and_count(language: str, secret_key: str):
         response.raise_for_status()
         page_payload = response.json()
         vacancies.extend(page_payload['objects'])
-        vacancies_count = response.json()['total']
+        vacancies_count = page_payload['total']
         if not page_payload['more']:
             break
     return vacancies, vacancies_count
